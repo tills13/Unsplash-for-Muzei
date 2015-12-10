@@ -1,6 +1,7 @@
 package ca.sbstn.unsplashformuzei;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -52,9 +53,15 @@ public class UnsplashArtSource extends RemoteMuzeiArtSource {
         ConnectivityManager cm = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
 
+        String networkKey = getResources().getString(R.string.preference_network_key);
+        boolean fetchWifiOnly = this.sharedPreferences.getBoolean(networkKey, true);
+
+        String timeIntervalKey = getResources().getString(R.string.preference_interval_key);
+        int updateInterval = Integer.parseInt(this.sharedPreferences.getString(timeIntervalKey, "1800000"));
+
         // only download over WiFi
-        if (activeNetwork.getType() != ConnectivityManager.TYPE_WIFI) {
-            return;
+        if ((activeNetwork.getType() != ConnectivityManager.TYPE_WIFI) && fetchWifiOnly) {
+            throw new RetryException();
         }
 
         Call<List<UnsplashService.Photo>> call = this.unsplash.random();
@@ -64,19 +71,24 @@ public class UnsplashArtSource extends RemoteMuzeiArtSource {
             public void onResponse(Response<List<UnsplashService.Photo>> response, Retrofit retrofit) {
                 List<UnsplashService.Photo> photos = response.body();
 
-                UnsplashService.Photo photo = photos.get(0);
+                if (photos != null && photos.size() >= 1) {
+                    UnsplashService.Photo photo = photos.get(0);
 
-                publishArtwork(
-                    new Artwork.Builder()
-                        .title(photo.author.name)
-                        .byline(photo.author.url)
-                        .imageUri(Uri.parse(photo.url))
-                        .build()
-                );
+                    publishArtwork(
+                        new Artwork.Builder()
+                            .title(photo.author.name)
+                            .byline(photo.author.url)
+                            .viewIntent(new Intent(Intent.ACTION_VIEW, Uri.parse("http://unsplash.com" + photo.author.url)))
+                            .imageUri(Uri.parse(photo.url))
+                            .build()
+                    );
+                }
             }
 
             @Override
             public void onFailure(Throwable t) {}
         });
+
+        scheduleUpdate(System.currentTimeMillis() + updateInterval);
     }
 }

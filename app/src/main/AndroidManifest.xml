@@ -10,7 +10,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_label"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme.NoActionBar">
         <service
             android:name=".UnsplashArtSource"
             android:label="@string/app_label"
@@ -21,11 +21,14 @@
             </intent-filter>
 
             <meta-data android:name="color" android:value="#67C7E2" />
+
+            <meta-data
+                android:name="settingsActivity"
+                android:value=".UnsplashForMuzei" />
         </service>
 
         <activity
             android:name=".UnsplashForMuzei"
             android:exported="true"/>
     </application>
-
 </manifest>
