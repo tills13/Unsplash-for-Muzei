@@ -10,10 +10,12 @@ import android.preference.PreferenceManager;
 
 import com.google.android.apps.muzei.api.Artwork;
 import com.google.android.apps.muzei.api.RemoteMuzeiArtSource;
+import com.google.android.apps.muzei.api.UserCommand;
 
 import java.io.IOException;
 import java.util.List;
 
+import ca.sbstn.unsplashformuzei.command.DownloadArtworkCommand;
 import retrofit.Call;
 import retrofit.Callback;
 import retrofit.GsonConverterFactory;
@@ -37,7 +39,10 @@ public class UnsplashArtSource extends RemoteMuzeiArtSource {
     public void onCreate() {
         super.onCreate();
 
-        setUserCommands(BUILTIN_COMMAND_ID_NEXT_ARTWORK);
+        setUserCommands(
+            new UserCommand(BUILTIN_COMMAND_ID_NEXT_ARTWORK),
+            new UserCommand(DownloadArtworkCommand.COMMAND_ID_DOWNLOAD_ARTWORK, "Download")
+        );
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("http://splashapi.sbstn.ca/api/v1.0/")
@@ -46,6 +51,15 @@ public class UnsplashArtSource extends RemoteMuzeiArtSource {
 
         this.unsplash = retrofit.create(UnsplashService.UnsplashAPI.class);
         this.sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+    }
+
+    @Override
+    public void onCustomCommand(int id) {
+        if (id == DownloadArtworkCommand.COMMAND_ID_DOWNLOAD_ARTWORK) {
+            //String saveDirectoryKey = getResources().getString(R.string.preference_save_dir_key);
+            //DownloadArtworkCommand.downloadArtwork(this, this.getCurrentArtwork(), this.sharedPreferences.getString(saveDirectoryKey, ""));
+            DownloadArtworkCommand.downloadArtwork(this, this.getCurrentArtwork());
+        } else super.onCustomCommand(id);
     }
 
     @Override
